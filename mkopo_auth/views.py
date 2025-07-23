@@ -1,44 +1,67 @@
 from .models import *
 import graphene
-from django.http import JsonResponse
-from django.views import View
-from django.contrib.auth import authenticate, login
-from oauth2_provider.decorators import protected_resource
+import graphql_jwt
+from django.contrib.auth import authenticate
 from mkopo_dto.mkopo_auth_dto import *
+from mkopo_dto.mkopo_response import ResponseObjects
 
 # Create your views here.
 class CreateUserMutation(graphene.Mutation):
     class Arguments:
-        input=UserInputObject()
-        
-        
-    output=graphene.Field(UserObject)
+        input = UserInputObject(required=True)
+
+    output = graphene.Field(UserResponseObject)
+
     @classmethod
-    def mutate(self,root, info, input):
-        if CustomUser.objects.filter(username=input.username).exists():
-            raise Exception("Username already exists")
+    def mutate(cls, root, info, input):
+        if CustomUser.objects.filter(username=input.username).exists():  
+            response=ResponseObjects.get_response(id=8)
+            output=UserResponseObject(user=None,response=response)
+            return CreateUserMutation(output=output)
         if CustomUser.objects.filter(email=input.email).exists():
-            raise Exception("Email already exists")
-        user = CustomUser(username=input.username, role=input.role)
+            response=ResponseObjects.get_response(id=9)
+            output=UserResponseObject(user=None,response=response)
+            return CreateUserMutation(output=output)
+        if input.role != 'client':
+            response=ResponseObjects.get_response(id=12)
+            output=UserResponseObject(user=None,response=response)
+            return CreateUserMutation(output=output)
+        user = CustomUser(
+            username=input.username,
+            email=input.email,
+            first_name=input.first_name,
+            last_name=input.last_name,
+            role=input.role
+        )
+        print(user)
         user.set_password(input.password)
         user.save()
-        return CreateUserMutation(output=user)
+        print(user)
+        response=ResponseObjects.get_response(id=5)
+        print(response)
+        output=UserResponseObject(user=user, response=response)
+        print(output)
+        return CreateUserMutation(output=output)
 
-class LoginMutation(graphene.Mutation):
+class LoginUserMutation(graphene.Mutation):
     class Arguments:
-        username = graphene.String(required=True)
-        password = graphene.String(required=True)
+        input = LoginInputObject(required=True)
 
-    success = graphene.Boolean()
-    message = graphene.String()
+    output = graphene.Field(LoginResponseObject)
 
-    def mutate(self, info, username, password):
-        user = authenticate(request=info.context, username=username, password=password)
-        if user:
-            login(request=info.context, user=user)
-            return LoginMutation(success=True, message="Logged in successfully")
-        return LoginMutation(success=False, message="Invalid credentials")
-
+    @classmethod
+    def mutate(cls, root, info, input):
+        user = authenticate(username=input.username, password=input.password)
+        print(user)
+        if user is None:
+            response=ResponseObjects.get_response(id=2)
+            output=LoginResponseObject(user=None, access_token=None, refresh_token=None, response=response)
+            return LoginUserMutation(output=output)
+        access_token = graphql_jwt.shortcuts.get_token(user)
+        refresh_token=graphql_jwt.shortcuts.create_refresh_token(user)
+        response=ResponseObjects.get_response(id=1)
+        output=LoginResponseObject(user=user, access_token=access_token, refresh_token=refresh_token, response=response)
+        return LoginUserMutation(output=output)
 
 class UpdateUser(graphene.Mutation):
     class Arguments:
@@ -48,8 +71,8 @@ class UpdateUser(graphene.Mutation):
 
     user = graphene.Field(UserObject)
 
-    @protected_resource(scopes=['write'])
-    def mutate(self, info, username=None, email=None, role=None):
+    @classmethod
+    def mutate(cls, root, info, username=None, email=None, role=None):
         user = info.context.user
         if not user.is_authenticated:
             raise Exception("Authentication required")
@@ -58,12 +81,15 @@ class UpdateUser(graphene.Mutation):
         if email:
             user.email = email
         if role:
+            if user.role != 'admin':
+                raise Exception("Only admin can change roles.")
             user.role = role
         user.save()
         return UpdateUser(user=user)
 
 class AuthMutation(graphene.ObjectType):
     create_user = CreateUserMutation.Field()
-    login_user=LoginMutation.Field()
-    update_user=UpdateUser.Field()
+    login_user = LoginUserMutation.Field()
+    update_user = UpdateUser.Field()
+    refresh_token = graphql_jwt.Refresh.Field()
     

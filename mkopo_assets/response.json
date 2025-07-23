@@ -58,6 +58,20 @@
         "code": "2011",
         "status": true,
         "message": "logout successful. Have a nice day!"
+      },
+      {
+        "id": 11,
+        "code": "2012",
+        "status": false,
+        "message": "You have no Authority to do this action"
+      },
+      {
+        "id": 12,
+        "code": "2013",
+        "status": false,
+        "message": "Only Client can register"
       }
-  
+
+
+      
   ]

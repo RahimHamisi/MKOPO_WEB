@@ -12,7 +12,7 @@ class ResponseObjects(graphene.ObjectType):
     @staticmethod
     def __read_code_file(code_id):
         current_dir = os.path.dirname(__file__)
-        response_dir = os.path.join(current_dir, '..', 'openspace_assets')
+        response_dir = os.path.join(current_dir, '..', 'mkopo_assets')
         file_path = os.path.join(response_dir, 'response.json')
         # print(f"Trying to open file: {file_path}")
         file = open(file_path,'r',encoding='utf-8')
