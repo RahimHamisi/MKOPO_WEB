@@ -55,7 +55,7 @@ class LoginUserMutation(graphene.Mutation):
         print(user)
         if user is None:
             response=ResponseObjects.get_response(id=2)
-            output=LoginResponseObject(user=None, access_token=None, refresh_token=None, response=response)
+            output=LoginResponseObject(response=response)
             return LoginUserMutation(output=output)
         access_token = graphql_jwt.shortcuts.get_token(user)
         refresh_token=graphql_jwt.shortcuts.create_refresh_token(user)

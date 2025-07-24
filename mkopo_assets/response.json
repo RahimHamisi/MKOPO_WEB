@@ -70,8 +70,25 @@
         "code": "2013",
         "status": false,
         "message": "Only Client can register"
+      },
+      {
+        "id": 13,
+        "code": "2014",
+        "status": true,
+        "message": "Loan application submitted successfully."
+      },
+      {
+        "id": 14,
+        "code": "2015",
+        "status": false,
+        "message": "Loan application failed."
+      },
+      {
+        "id": 15,
+        "code": "2016 ",
+        "status": false,
+        "message": "You already have a pending loan application."
       }
-
 
       
   ]
